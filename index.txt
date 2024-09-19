@@ -3,291 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flip Flashcards with Media Capture</title>
+    <title>Time_management</title>
     <style>
-        /* ... (previous styles remain unchanged) ... */
-        #pasteImage {
-            display: none;
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: black;
+            overflow: hidden; /* Hide scrollbars */
         }
-        #imageInput {
-            margin-top: 10px;
+
+        .container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            position: relative; /* For positioning the resizer */
+        }
+
+        .iframe-wrapper {
+            height: 100%;
+            overflow: hidden;
+            flex: 1;
+            box-sizing: border-box; /* Include padding and border in width */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .resizer {
+            width: 10px;
+            background-color: gray;
+            cursor: col-resize;
+            position: absolute; /* Positioning it absolutely */
+            top: 0;
+            bottom: 0;
+            z-index: 10; /* Ensure it stays on top */
+            transition: background-color 0.2s; /* Smooth color transition */
+        }
+
+        .resizer.active {
+            background-color: lightgray; /* Indicate active dragging state */
         }
     </style>
 </head>
 <body>
-    <h1>Flip Flashcards with Media Capture</h1>
-
-    <div class="controls">
-        <h2>Question</h2>
-        <button onclick="startCaptureImage('question')">Capture Image</button>
-        <button onclick="startCaptureVideo('question')">Start Video</button>
-        <button onclick="pauseCaptureVideo('question')">Pause Video</button>
-        <button onclick="stopCaptureVideo('question')">Stop Video</button>
-        <button onclick="startCaptureAudio('question')">Start Audio</button>
-        <button onclick="pauseCaptureAudio('question')">Pause Audio</button>
-        <button onclick="stopCaptureAudio('question')">Stop Audio</button>
-        <button onclick="switchCamera('question')">Switch Camera</button>
-        <video id="questionVideoPreview" style="display:none;" controls></video>
-        <audio id="questionAudioPreview" style="display:none;" controls></audio>
-        <canvas id="questionCanvas" style="display: none;"></canvas>
-
-        <h2>Answer</h2>
-        <button onclick="startCaptureImage('answer')">Capture Image</button>
-        <button onclick="startCaptureVideo('answer')">Start Video</button>
-        <button onclick="pauseCaptureVideo('answer')">Pause Video</button>
-        <button onclick="stopCaptureVideo('answer')">Stop Video</button>
-        <button onclick="startCaptureAudio('answer')">Start Audio</button>
-        <button onclick="pauseCaptureAudio('answer')">Pause Audio</button>
-        <button onclick="stopCaptureAudio('answer')">Stop Audio</button>
-        <button onclick="switchCamera('answer')">Switch Camera</button>
-        <video id="answerVideoPreview" style="display:none;" controls></video>
-        <audio id="answerAudioPreview" style="display:none;" controls></audio>
-        <canvas id="answerCanvas" style="display: none;"></canvas>
-
-        <h2>Add Image</h2>
-        <input type="file" id="imageInput" accept="image/*">
-        <button onclick="addImageToFlashcard('question')">Add to Question</button>
-        <button onclick="addImageToFlashcard('answer')">Add to Answer</button>
-    </div>
-
     <div class="container">
-        <div class="flashcard" id="flashcard">
-            <div class="flashcard-side flashcard-front" id="flashcardFront">Question Side</div>
-            <div class="flashcard-side flashcard-back" id="flashcardBack">Answer Side</div>
+        <div class="iframe-wrapper" id="iframe1">
+            <iframe src="t7.html" frameborder="0" title="Page 1"></iframe>
+        </div>
+        <div class="resizer" id="resizer"></div>
+        <div class="iframe-wrapper" id="iframe2">
+            <iframe src="clock.html" frameborder="0"></iframe>
         </div>
     </div>
 
-    <div class="navigation-buttons">
-        <button onclick="previousFlashcard()">Previous</button>
-        <button onclick="addFlashcard()">Add Flashcard</button>
-        <button onclick="nextFlashcard()">Next</button>
-    </div>
-
     <script>
-        let streams = { question: null, answer: null };
-        let mediaRecorders = { question: null, answer: null };
-        let isRecording = { question: false, answer: false };
-        let currentCameraFacing = { question: 'user', answer: 'user' };
+        const resizer = document.getElementById('resizer');
+        const leftIframe = document.getElementById('iframe1');
+        const rightIframe = document.getElementById('iframe2');
+        const container = document.querySelector('.container');
+        let isResizing = false;
+        let startX = 0;
 
-        const videoPreview = { 
-            question: document.getElementById('questionVideoPreview'),
-            answer: document.getElementById('answerVideoPreview')
-        };
-        const audioPreview = {
-            question: document.getElementById('questionAudioPreview'),
-            answer: document.getElementById('answerAudioPreview')
-        };
-        const canvas = {
-            question: document.getElementById('questionCanvas'),
-            answer: document.getElementById('answerCanvas')
-        };
-        const flashcard = document.getElementById('flashcard');
-        const front = document.getElementById('flashcardFront');
-        const back = document.getElementById('flashcardBack');
+        // Set initial resizer position to the middle
+        function setInitialResizerPosition() {
+            const containerWidth = container.getBoundingClientRect().width;
+            const initialWidth = containerWidth / 2;
 
-        let flashcards = [];
-        let currentFlashcardIndex = -1;
+            leftIframe.style.flex = `0 0 ${initialWidth}px`;
+            rightIframe.style.flex = `0 0 ${initialWidth}px`;
 
-        flashcard.addEventListener('click', () => {
-            flashcard.classList.toggle('is-flipped');
-        });
-
-        function addFlashcard() {
-            const newFlashcard = {
-                question: front.innerHTML,
-                answer: back.innerHTML
-            };
-            flashcards.push(newFlashcard);
-            currentFlashcardIndex = flashcards.length - 1;
-            alert("Flashcard added successfully!");
-            resetFlashcard();
+            resizer.style.left = `${initialWidth}px`;
         }
 
-        function nextFlashcard() {
-            if (flashcards.length === 0) {
-                alert("No flashcards available. Please add a flashcard first.");
-                return;
-            }
-            currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcards.length;
-            displayCurrentFlashcard();
+        // Function to handle resizing
+        function onMove(e) {
+            if (!isResizing) return;
+
+            e.preventDefault();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const containerRect = container.getBoundingClientRect();
+            const containerLeft = containerRect.left;
+
+            // Calculate the new position of the resizer and iframes
+            const resizerX = clientX - containerLeft;
+            const containerWidth = containerRect.width;
+            const minWidth = 0.25 * containerWidth; // Minimum width in pixels
+            const maxWidth = 0.75 * containerWidth; // Maximum width in pixels
+
+            // Calculate the new widths
+            const leftWidth = Math.min(Math.max(resizerX, minWidth), maxWidth);
+            const rightWidth = containerWidth - leftWidth;
+
+            // Apply the new widths to the iframes
+            leftIframe.style.flex = `0 0 ${leftWidth}px`;
+            rightIframe.style.flex = `0 0 ${rightWidth}px`;
+
+            // Move the resizer
+            resizer.style.left = `${leftWidth}px`;
         }
 
-        function previousFlashcard() {
-            if (flashcards.length === 0) {
-                alert("No flashcards available. Please add a flashcard first.");
-                return;
-            }
-            currentFlashcardIndex = (currentFlashcardIndex - 1 + flashcards.length) % flashcards.length;
-            displayCurrentFlashcard();
+        // Start resizing
+        function startResize(e) {
+            isResizing = true;
+            resizer.classList.add('active'); // Add visual feedback
+            startX = e.touches ? e.touches[0].clientX : e.clientX;
+            e.preventDefault();
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('touchmove', onMove);
+            document.addEventListener('touchend', stopResize);
         }
 
-        function displayCurrentFlashcard() {
-            const currentFlashcard = flashcards[currentFlashcardIndex];
-            front.innerHTML = currentFlashcard.question;
-            back.innerHTML = currentFlashcard.answer;
-            flashcard.classList.remove('is-flipped');
+        // Stop resizing
+        function stopResize() {
+            isResizing = false;
+            resizer.classList.remove('active'); // Remove visual feedback
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', stopResize);
         }
 
-        function resetFlashcard() {
-            front.innerHTML = "Question Side";
-            back.innerHTML = "Answer Side";
-            flashcard.classList.remove('is-flipped');
+        // Double-click to start resizing
+        function doubleClick(e) {
+            startResize(e);
         }
 
-        function addImageToFlashcard(side) {
-            const imageInput = document.getElementById('imageInput');
-            const file = imageInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
-                    if (side === 'question') {
-                        front.innerHTML = '';
-                        front.appendChild(img);
-                    } else {
-                        back.innerHTML = '';
-                        back.appendChild(img);
-                    }
-                };
-                reader.readAsDataURL(file);
-                imageInput.value = '';
-            } else {
-                alert('Please select an image file first.');
-            }
-        }
+        // Add event listeners for both mouse and touch events
+        resizer.addEventListener('mousedown', startResize);
+        resizer.addEventListener('touchstart', startResize);
+        resizer.addEventListener('dblclick', doubleClick); // Double-click to start resizing
 
-        function stopAllRecordings() {
-            stopCaptureVideo('question');
-            stopCaptureAudio('question');
-            stopCaptureVideo('answer');
-            stopCaptureAudio('answer');
-        }
+        // Initialize resizer position
+        setInitialResizerPosition();
 
-        async function startCaptureImage(side) {
-            stopAllRecordings();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentCameraFacing[side] } 
-                });
-                const videoTrack = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(videoTrack);
-                const bitmap = await imageCapture.grabFrame();
-                canvas[side].width = bitmap.width;
-                canvas[side].height = bitmap.height;
-                const ctx = canvas[side].getContext('2d');
-                ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
-                const imageBlob = canvas[side].toDataURL('image/png');
-                if (side === 'question') {
-                    front.innerHTML = `<img src="${imageBlob}" alt="Captured Image">`;
-                } else {
-                    back.innerHTML = `<img src="${imageBlob}" alt="Captured Image">`;
-                }
-                stream.getTracks().forEach(track => track.stop());
-            } catch (error) {
-                console.error('Error capturing image:', error);
-            }
-        }
-
-        async function startCaptureVideo(side) {
-            stopAllRecordings();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true, 
-                    video: { facingMode: currentCameraFacing[side] } 
-                });
-                streams[side] = stream;
-                videoPreview[side].srcObject = stream;
-                videoPreview[side].style.display = 'block';
-                videoPreview[side].play();
-
-                mediaRecorders[side] = new MediaRecorder(stream);
-                let chunks = [];
-                mediaRecorders[side].ondataavailable = (event) => {
-                    chunks.push(event.data);
-                };
-                mediaRecorders[side].onstop = () => {
-                    const videoBlob = new Blob(chunks, { type: 'video/webm' });
-                    const videoURL = URL.createObjectURL(videoBlob);
-                    if (side === 'question') {
-                        front.innerHTML = `<video src="${videoURL}" controls></video>`;
-                    } else {
-                        back.innerHTML = `<video src="${videoURL}" controls></video>`;
-                    }
-                    videoPreview[side].style.display = 'none';
-                };
-                mediaRecorders[side].start();
-                isRecording[side] = true;
-            } catch (error) {
-                console.error('Error accessing media devices:', error);
-            }
-        }
-
-        function pauseCaptureVideo(side) {
-            if (isRecording[side] && mediaRecorders[side] && mediaRecorders[side].state === "recording") {
-                mediaRecorders[side].pause();
-            }
-        }
-
-        function stopCaptureVideo(side) {
-            if (isRecording[side] && mediaRecorders[side] && mediaRecorders[side].state !== "inactive") {
-                mediaRecorders[side].stop();
-                streams[side].getTracks().forEach(track => track.stop());
-                isRecording[side] = false;
-            }
-        }
-
-        async function startCaptureAudio(side) {
-            stopAllRecordings();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                streams[side] = stream;
-                mediaRecorders[side] = new MediaRecorder(stream);
-                let chunks = [];
-                mediaRecorders[side].ondataavailable = (event) => {
-                    chunks.push(event.data);
-                };
-                mediaRecorders[side].onstop = () => {
-                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                    const audioURL = URL.createObjectURL(audioBlob);
-                    if (side === 'question') {
-                        front.innerHTML = `<audio src="${audioURL}" controls></audio>`;
-                    } else {
-                        back.innerHTML = `<audio src="${audioURL}" controls></audio>`;
-                    }
-                    audioPreview[side].style.display = 'none';
-                };
-                mediaRecorders[side].start();
-                isRecording[side] = true;
-                alert(`Recording started for ${side}. Click 'Stop Audio' when finished.`);
-            } catch (error) {
-                console.error('Error accessing audio devices:', error);
-            }
-        }
-
-        function pauseCaptureAudio(side) {
-            if (isRecording[side] && mediaRecorders[side] && mediaRecorders[side].state === "recording") {
-                mediaRecorders[side].pause();
-            }
-        }
-
-        function stopCaptureAudio(side) {
-            if (isRecording[side] && mediaRecorders[side] && mediaRecorders[side].state !== "inactive") {
-                mediaRecorders[side].stop();
-                streams[side].getTracks().forEach(track => track.stop());
-                isRecording[side] = false;
-            }
-        }
-
-        function switchCamera(side) {
-            currentCameraFacing[side] = currentCameraFacing[side] === 'user' ? 'environment' : 'user';
-            if (isRecording[side]) {
-                stopCaptureVideo(side);
-                startCaptureVideo(side);
-            }
-        }
+        // Recalculate the position if the window is resized
+        window.addEventListener('resize', setInitialResizerPosition);
     </script>
 </body>
 </html>
