@@ -31,8 +31,11 @@
 
         .quadrant {
             padding: 10px;
-            margin: 0; /* Removed margin */
+            margin: 0;
             border-radius: 10px;
+            display: inline-block;
+            width: 45%; /* Adjust to wrap when minimizing */
+            box-sizing: border-box;
         }
 
         #urgent-important {
@@ -77,7 +80,17 @@
         }
 
         h2 {
-            color: navy; /* Added style to make the h1 heading red */
+            color: navy;
+        }
+
+        @media (max-width: 600px) {
+            .quadrant {
+                width: 100%;
+            }
+
+            form, #tasks, #timer {
+                padding: 20px;
+            }
         }
     </style>
 </head>
