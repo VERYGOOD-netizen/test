@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time Management Calendar</title>
@@ -29,7 +28,7 @@
       background-color: #333;
       border-radius: 8px;
       padding: 10px;
-      overflow: auto; /* Enable scrolling if content exceeds height */
+      overflow: auto;
     }
     .week-view, .month-view {
       width: 100%;
@@ -63,7 +62,7 @@
       border: 1px solid #444;
       padding: 8px;
       text-align: center;
-      vertical-align: top; /* Align content to the top of the cell */
+      vertical-align: top;
     }
     th {
       background-color: #555;
@@ -122,11 +121,22 @@
     #user-info {
       margin-bottom: 10px;
     }
+    .resize-buttons {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+    }
   </style>
 
 </head>
 
 <body onload="checkLogin()">
+
+  <div class="resize-buttons">
+    <button onclick="minimizePage()">Minimize</button>
+    <button onclick="maximizePage()">Maximize</button>
+  </div>
 
   <div class="container">
     <div id="login-form">
@@ -139,7 +149,7 @@
       <button onclick="logout()">Logout</button>
     </div>
 
-<p><a href="t7.html">Go back to today mode</a></p>
+    <p><a href="t7.html">Go back to today mode</a></p>
 
     <div id="calendar-container" style="display: none;">
       <div class="view-toggle">
@@ -160,8 +170,6 @@
       <div class="calendar month-view" id="month-view" style="display:none;">
         <h2 id="month-title">Monthly View</h2>
         <table>
-
-
           <tr>
             <th>Sun</th>
             <th>Mon</th>
@@ -351,6 +359,30 @@
         currentDate.setMonth(currentDate.getMonth() + amount);
         generateMonthlyView(currentDate);
       }
+    }
+
+    let currentZoom = 100;
+    const minZoom = 10;
+    const maxZoom = 100;
+    const zoomStep = 10;
+
+    function minimizePage() {
+      if (currentZoom > minZoom) {
+        currentZoom -= zoomStep;
+        applyZoom();
+      }
+    }
+
+    function maximizePage() {
+      if (currentZoom < maxZoom) {
+        currentZoom += zoomStep;
+        applyZoom();
+      }
+    }
+
+    function applyZoom() {
+      document.body.style.zoom = `${currentZoom}%`;
+      document.body.style.overflow = "auto";
     }
   </script>
 
