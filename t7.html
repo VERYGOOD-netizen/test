@@ -7,7 +7,6 @@
     
     <style>
         body {
-            /* Animated Gradient Background */
             background: linear-gradient(45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
@@ -23,7 +22,6 @@
             100% {background-position: 0% 50%;}
         }
 
-        /* Form Styles */
         form {
             padding: 50px;
             border-radius: 20px;
@@ -32,39 +30,48 @@
 
         .quadrant {
             padding: 10px;
-            margin: 0;
+            margin: 0 0 20px 0;
             border-radius: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
         }
 
         #urgent-important {
-            background: red;
+            background: rgba(255, 0, 0, 0.7);
         }
 
         #important-noturgent {
-            background: blue;
+            background: rgba(0, 0, 255, 0.7);
         }
 
         #urgent-notimportant {
-            background: green;
+            background: rgba(0, 255, 0, 0.7);
         }
 
         #noturgent-notimportant {
-            background: yellow;
+            background: rgba(255, 255, 0, 0.7);
         }
 
         .task {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
         }
 
         .task label {
             margin-right: 10px;
+            word-break: break-word;
         }
 
         .checkbox-label {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             flex-grow: 1;
+            flex-wrap: wrap;
         }
 
         .delete-button {
@@ -284,6 +291,7 @@
 
             function addTaskToUI(user, task, priority, estimatedTime, isChecked = false) {
                 const taskContainer = document.createElement("div");
+                taskContainer.classList.add("task");
                 const label = document.createElement("label");
                 label.textContent = `${task} - Priority: ${priority} - Estimated Time: ${estimatedTime} minutes`;
 
