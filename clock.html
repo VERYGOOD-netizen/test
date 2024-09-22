@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             background: #000080;
             margin: 0;
-            padding: 20px;
+            padding: 20px 20px 20px 40px; /* Added left padding */
             color: white;
         }
 
@@ -170,6 +170,7 @@
             currentZoom *= factor;
             document.body.style.zoom = currentZoom;
             document.body.style.cssText += '; -moz-transform: scale(' + currentZoom + '); -moz-transform-origin: 0 0;';
+            localStorage.setItem("lastZoom", currentZoom);
         }
 
         function saveEmail() {
@@ -333,6 +334,19 @@
             }
             updateClock();
             setInterval(updateClock, 1000);
+
+            // Load and apply the last zoom level
+            const lastZoom = parseFloat(localStorage.getItem("lastZoom"));
+            if (!isNaN(lastZoom)) {
+                currentZoom = lastZoom;
+                document.body.style.zoom = currentZoom;
+                document.body.style.cssText += '; -moz-transform: scale(' + currentZoom + '); -moz-transform-origin: 0 0;';
+            }
+        });
+
+        // Save zoom level before unloading the page
+        window.addEventListener("beforeunload", () => {
+            localStorage.setItem("lastZoom", currentZoom);
         });
     </script>
 </body>
