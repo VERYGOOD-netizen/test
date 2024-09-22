@@ -131,7 +131,7 @@
 
 </head>
 
-<body onload="checkLogin()">
+<body onload="checkLogin(); restoreZoom()">
 <br>
 <br>
   <div class="resize-buttons">
@@ -281,111 +281,101 @@
         if (isToday) {
           dayBlock.classList.add('today');
         }
-        dayBlock.innerHTML = `
-          <div class="day-header">${dayNames[i]}, ${day.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</div>
-          <textarea placeholder="Task/Event for ${dayNames[i]}" data-date="${formattedDate}" oninput="updateEvent(this)">${eventsData[formattedDate] || ''}</textarea>
-        `;
+
+        const dayHeader = document.createElement('div');
+        dayHeader.classList.add('day-header');
+        dayHeader.innerText = `${dayNames[i]} - ${day.toLocaleDateString()}`;
+
+        const textArea = document.createElement('textarea');
+        textArea.value = eventsData[formattedDate] || '';
+        textArea.oninput = () => {
+          eventsData[formattedDate] = textArea.value;
+          saveEventsData();
+        };
+
+        dayBlock.appendChild(dayHeader);
+        dayBlock.appendChild(textArea);
+
         weekContainer.appendChild(dayBlock);
       }
-      
-      document.querySelectorAll('textarea').forEach(autoResize);
     }
 
     function generateMonthlyView(date) {
-      const currentYear = date.getFullYear();
-      const currentMonth = date.getMonth();
-      const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-      const startDate = new Date(firstDayOfMonth);
-      startDate.setHours(0, 0, 0, 0);
-      startDate.setDate(startDate.getDate() - startDate.getDay());
+      const year = date.getFullYear();
+      const month = date.getMonth();
 
-      document.getElementById('month-title').innerText = `Monthly View - ${date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+      document.getElementById('month-title').innerText = `Monthly View - ${date.toLocaleString('default', { month: 'long' })} ${year}`;
 
-      const monthDays = document.getElementById('month-days');
-      monthDays.innerHTML = '';
+      const firstDayOfMonth = new Date(year, month, 1);
+      const firstDayOfWeek = firstDayOfMonth.getDay();
 
-      const monthColorClass = (currentMonth % 2 === 0) ? 'current-month' : 'other-month';
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
 
-      for (let i = 0; i < 6; i++) {
-        let rowHtml = '<tr>';
-        for (let j = 0; j < 7; j++) {
-          const day = new Date(startDate);
-          const formattedDate = formatDate(day);
-          const isCurrentMonth = day.getMonth() === currentMonth;
-          const isToday = day.toDateString() === new Date().toDateString();
-
-          let cellClass = isCurrentMonth ? monthColorClass : 'other-month';
-          if (isToday) {
-            cellClass += ' today';
+      let dayCounter = 1;
+      let html = '';
+      for (let week = 0; week < 6; week++) {
+        html += '<tr>';
+        for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+          if (week === 0 && dayOfWeek < firstDayOfWeek || dayCounter > daysInMonth) {
+            html += '<td></td>';
+          } else {
+            const currentDay = new Date(year, month, dayCounter);
+            const formattedDate = formatDate(currentDay);
+            const isToday = currentDay.toDateString() === today.toDateString();
+            const dayClass = isToday ? 'today' : '';
+            html += `<td class="${dayClass}">${dayCounter}</td>`;
+            dayCounter++;
           }
-
-          rowHtml += `<td class="${cellClass}">
-                        <div>
-                          <span class="date-label">${day.getDate()}</span>
-                          <textarea placeholder="Event" data-date="${formattedDate}" oninput="updateEvent(this)">${eventsData[formattedDate] || ''}</textarea>
-                        </div>
-                      </td>`;
-          
-          startDate.setDate(startDate.getDate() + 1);
         }
-        rowHtml += '</tr>';
-        monthDays.innerHTML += rowHtml;
+        html += '</tr>';
+        if (dayCounter > daysInMonth) {
+          break;
+        }
       }
-      
-      document.querySelectorAll('textarea').forEach(autoResize);
+
+      document.getElementById('month-days').innerHTML = html;
     }
 
     function formatDate(date) {
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     }
 
-    function updateEvent(textarea) {
-      const date = textarea.getAttribute('data-date');
-      eventsData[date] = textarea.value;
-      saveEventsData();
-    }
+    function changePeriod(direction) {
+      const currentView = document.getElementById('week-view').style.display === 'block' ? 'week' : 'month';
 
-    function autoResize(textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-
-    function changePeriod(amount) {
-      const view = document.getElementById('week-view').style.display === 'block' ? 'week' : 'month';
-      if (view === 'week') {
-        currentDate.setDate(currentDate.getDate() + amount * 7);
+      if (currentView === 'week') {
+        currentDate.setDate(currentDate.getDate() + (7 * direction));
         generateWeeklyView(currentDate);
-      } else if (view === 'month') {
-        currentDate.setMonth(currentDate.getMonth() + amount);
+      } else if (currentView === 'month') {
+        currentDate.setMonth(currentDate.getMonth() + direction);
         generateMonthlyView(currentDate);
       }
     }
 
-    let currentZoom = 100;
-    const minZoom = 10;
-    const maxZoom = 100;
-    const zoomStep = 10;
-
+    // Zoom Functions
     function minimizePage() {
-      if (currentZoom > minZoom) {
-        currentZoom -= zoomStep;
-        applyZoom();
-      }
+      localStorage.setItem('zoomSize', 'minimized');
+      document.body.style.transform = 'scale(0.75)';
+      document.body.style.transition = 'transform 0.3s';
     }
 
     function maximizePage() {
-      if (currentZoom < maxZoom) {
-        currentZoom += zoomStep;
-        applyZoom();
-      }
+      localStorage.setItem('zoomSize', 'maximized');
+      document.body.style.transform = 'scale(1)';
+      document.body.style.transition = 'transform 0.3s';
     }
 
-    function applyZoom() {
-      document.body.style.zoom = `${currentZoom}%`;
-      document.body.style.overflow = "auto";
+    function restoreZoom() {
+      const zoomSize = localStorage.getItem('zoomSize');
+      if (zoomSize === 'minimized') {
+        document.body.style.transform = 'scale(0.75)';
+      } else {
+        document.body.style.transform = 'scale(1)';
+      }
     }
   </script>
 
