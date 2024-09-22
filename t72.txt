@@ -18,7 +18,6 @@
       flex-direction: column;
       align-items: center;
       margin-top: 20px;
-      margin-right: 20px; /* Add space from the right side */
     }
     .view-toggle, .navigation {
       margin-bottom: 20px;
@@ -29,7 +28,7 @@
       background-color: #333;
       border-radius: 8px;
       padding: 10px;
-      overflow: auto;
+      overflow: auto; /* Enable scrolling if content exceeds height */
     }
     .week-view, .month-view {
       width: 100%;
@@ -63,7 +62,7 @@
       border: 1px solid #444;
       padding: 8px;
       text-align: center;
-      vertical-align: top;
+      vertical-align: top; /* Align content to the top of the cell */
     }
     th {
       background-color: #555;
@@ -126,7 +125,7 @@
 
 </head>
 
-<body onload="checkLogin(); restoreSize();">
+<body onload="initPage()">
 
   <div class="container">
     <div id="login-form">
@@ -150,6 +149,8 @@
       <div class="navigation">
         <button onclick="changePeriod(-1)">Previous</button>
         <button onclick="changePeriod(1)">Next</button>
+        <button onclick="zoomIn()">Zoom In</button>
+        <button onclick="zoomOut()">Zoom Out</button>
       </div>
 
       <div class="calendar week-view" id="week-view">
@@ -179,6 +180,13 @@
     let currentUser = null;
     let eventsData = {};
     let currentDate = new Date();
+    let currentZoom = 1;
+
+    function initPage() {
+      checkLogin();
+      loadZoom();
+      applyZoom();
+    }
 
     function checkLogin() {
       const storedEmail = localStorage.getItem('loggedInEmail');
@@ -351,25 +359,34 @@
       }
     }
 
-    // New functions to save and restore window size
-    function saveSize() {
-      const size = {
-        width: window.innerWidth,
-        height: window.innerHeight
-      };
-      localStorage.setItem('windowSize', JSON.stringify(size));
+    function zoomIn() {
+      currentZoom *= 1.1;
+      applyZoom();
+      saveZoom();
     }
 
-    function restoreSize() {
-      const savedSize = localStorage.getItem('windowSize');
-      if (savedSize) {
-        const size = JSON.parse(savedSize);
-        window.resizeTo(size.width, size.height);
+    function zoomOut() {
+      currentZoom /= 1.1;
+      applyZoom();
+      saveZoom();
+    }
+
+    function applyZoom() {
+      document.body.style.zoom = currentZoom;
+      document.body.style.transform = `scale(${currentZoom})`;
+      document.body.style.transformOrigin = 'top left';
+    }
+
+    function saveZoom() {
+      localStorage.setItem('currentZoom', currentZoom);
+    }
+
+    function loadZoom() {
+      const savedZoom = localStorage.getItem('currentZoom');
+      if (savedZoom) {
+        currentZoom = parseFloat(savedZoom);
       }
     }
-
-    // Add event listener to save size before unload
-    window.addEventListener('beforeunload', saveSize);
   </script>
 
 </body>
