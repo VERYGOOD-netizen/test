@@ -6,14 +6,21 @@
     <title>Time Management App</title>
     
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
         body {
             background: linear-gradient(45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
             transition: transform 0.3s ease;
+            box-sizing: border-box;
+            padding: 20px;
         }
         
         @keyframes gradientAnimation {
@@ -23,8 +30,10 @@
         }
 
         form, #tasks, #timer {
+            width: 100%;
             max-width: 100%;
             margin: 0 auto;
+            box-sizing: border-box;
         }
 
         .quadrant {
@@ -273,12 +282,12 @@
                     clearInterval(interval);
                     interval = null;
                     if (isBreak) {
-                        alert("Time to get back to work!");
+                       ;
                         isBreak = false;
                         timeLeft = (parseInt(document.getElementById("workTime").value) || 25) * 60;
                         document.getElementById("backgroundAudio").play();
                     } else {
-                        alert("Great job! Take a break and relax.");
+                     ;
                         isBreak = true;
                         timeLeft = (parseInt(document.getElementById("breakTime").value) || 5) * 60;
                         document.getElementById("backgroundAudio").pause();
