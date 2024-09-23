@@ -12,7 +12,7 @@
             animation: gradientAnimation 15s ease infinite;
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 50px;
+            padding: 20px;
             transition: transform 0.3s ease;
         }
         
@@ -22,10 +22,9 @@
             100% {background-position: 0% 50%;}
         }
 
-        form {
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0;
+        form, #tasks, #timer {
+            max-width: 100%;
+            margin: 0 auto;
         }
 
         .quadrant {
@@ -60,11 +59,13 @@
             align-items: center;
             flex-wrap: wrap;
             margin-bottom: 10px;
+            width: 100%;
         }
 
         .task label {
             margin-right: 10px;
             word-break: break-word;
+            flex-grow: 1;
         }
 
         .checkbox-label {
@@ -72,6 +73,7 @@
             align-items: flex-start;
             flex-grow: 1;
             flex-wrap: wrap;
+            width: 100%;
         }
 
         .delete-button {
@@ -115,6 +117,27 @@
         }
         .btn:active {
             transform: translateY(1px);
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        #addTask {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #addTask:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
