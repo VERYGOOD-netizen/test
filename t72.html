@@ -12,15 +12,12 @@
       padding: 0;
       background-color: #000;
       color: #fff;
-      display: flex;
-      justify-content: center;
     }
     .container {
       display: flex;
       flex-direction: column;
       align-items: center;
       margin-top: 20px;
-      max-width: 100%;
     }
     .view-toggle, .navigation {
       margin-bottom: 20px;
@@ -124,57 +121,69 @@
     #user-info {
       margin-bottom: 10px;
     }
+    .zoom-controls {
+      margin-bottom: 10px;
+    }
+    #zoom-container {
+      width: 100%;
+      transform-origin: top left;
+    }
   </style>
 
 </head>
 
-<body onload="initPage()">
+<body onload="checkLogin()">
 
-  <div class="container">
-    <div id="login-form">
-      <input type="email" id="email" placeholder="Enter your Gmail address" required>
-      <button onclick="login()">Login</button>
-    </div>
-
-    <div id="user-info" style="display: none;">
-      Logged in as: <span id="user-email"></span>
-      <button onclick="logout()">Logout</button>
-    </div>
-
-    <p><a href="t7.html">Go back to today mode</a></p>
-
-    <div id="calendar-container" style="display: none;">
-      <div class="view-toggle">
-        <button onclick="showView('week')">Weekly View</button>
-        <button onclick="showView('month')">Monthly View</button>
+  <div id="zoom-container">
+    <div class="container">
+      <div id="login-form">
+        <input type="email" id="email" placeholder="Enter your Gmail address" required>
+        <button onclick="login()">Login</button>
       </div>
 
-      <div class="navigation">
-        <button onclick="changePeriod(-1)">Previous</button>
-        <button onclick="changePeriod(1)">Next</button>
-        <button onclick="zoomIn()">Zoom In</button>
-        <button onclick="zoomOut()">Zoom Out</button>
+      <div id="user-info" style="display: none;">
+        Logged in as: <span id="user-email"></span>
+        <button onclick="logout()">Logout</button>
       </div>
 
-      <div class="calendar week-view" id="week-view">
-        <h2 id="week-title">Weekly View</h2>
-        <div id="week-container"></div>
-      </div>
+      <p><a href="t7.html">Go back to today mode</a></p>
 
-      <div class="calendar month-view" id="month-view" style="display:none;">
-        <h2 id="month-title">Monthly View</h2>
-        <table>
-          <tr>
-            <th>Sun</th>
-            <th>Mon</th>
-            <th>Tue</th>
-            <th>Wed</th>
-            <th>Thu</th>
-            <th>Fri</th>
-            <th>Sat</th>
-          </tr>
-          <tbody id="month-days"></tbody>
-        </table>
+      <div id="calendar-container" style="display: none;">
+        <div class="zoom-controls">
+          <button onclick="zoom(1.1)">Zoom In</button>
+          <button onclick="zoom(0.9)">Zoom Out</button>
+        </div>
+
+        <div class="view-toggle">
+          <button onclick="showView('week')">Weekly View</button>
+          <button onclick="showView('month')">Monthly View</button>
+        </div>
+
+        <div class="navigation">
+          <button onclick="changePeriod(-1)">Previous</button>
+          <button onclick="changePeriod(1)">Next</button>
+        </div>
+
+        <div class="calendar week-view" id="week-view">
+          <h2 id="week-title">Weekly View</h2>
+          <div id="week-container"></div>
+        </div>
+
+        <div class="calendar month-view" id="month-view" style="display:none;">
+          <h2 id="month-title">Monthly View</h2>
+          <table>
+            <tr>
+              <th>Sun</th>
+              <th>Mon</th>
+              <th>Tue</th>
+              <th>Wed</th>
+              <th>Thu</th>
+              <th>Fri</th>
+              <th>Sat</th>
+            </tr>
+            <tbody id="month-days"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -185,12 +194,6 @@
     let currentDate = new Date();
     let currentZoom = 1;
 
-    function initPage() {
-      checkLogin();
-      loadZoom();
-      applyZoom();
-    }
-
     function checkLogin() {
       const storedEmail = localStorage.getItem('loggedInEmail');
       if (storedEmail) {
@@ -200,6 +203,7 @@
         document.getElementById('user-email').textContent = storedEmail;
         document.getElementById('calendar-container').style.display = 'block';
         loadEventsData();
+        loadZoomLevel();
         showView('week');
       }
     }
@@ -214,6 +218,7 @@
         document.getElementById('user-email').textContent = email;
         document.getElementById('calendar-container').style.display = 'block';
         loadEventsData();
+        loadZoomLevel();
         showView('week');
       } else {
         alert('Please enter a valid Gmail address.');
@@ -224,10 +229,12 @@
       currentUser = null;
       eventsData = {};
       localStorage.removeItem('loggedInEmail');
+      localStorage.removeItem('currentZoom');
       document.getElementById('login-form').style.display = 'block';
       document.getElementById('user-info').style.display = 'none';
       document.getElementById('calendar-container').style.display = 'none';
       document.getElementById('email').value = '';
+      resetZoom();
     }
 
     function loadEventsData() {
@@ -362,33 +369,33 @@
       }
     }
 
-    function zoomIn() {
-      currentZoom *= 1.1;
+    function zoom(factor) {
+      currentZoom *= factor;
       applyZoom();
-      saveZoom();
-    }
-
-    function zoomOut() {
-      currentZoom /= 1.1;
-      applyZoom();
-      saveZoom();
+      saveZoomLevel();
     }
 
     function applyZoom() {
-      document.body.style.zoom = currentZoom;
-      document.querySelector('.container').style.transform = `scale(${currentZoom})`;
-      document.querySelector('.container').style.transformOrigin = 'center top';
+      document.getElementById('zoom-container').style.transform = `scale(${currentZoom})`;
+      document.body.style.width = `${100 / currentZoom}%`;
+      document.body.style.height = `${100 / currentZoom}%`;
     }
 
-    function saveZoom() {
+    function saveZoomLevel() {
       localStorage.setItem('currentZoom', currentZoom);
     }
 
-    function loadZoom() {
+    function loadZoomLevel() {
       const savedZoom = localStorage.getItem('currentZoom');
       if (savedZoom) {
         currentZoom = parseFloat(savedZoom);
+        applyZoom();
       }
+    }
+
+    function resetZoom() {
+      currentZoom = 1;
+      applyZoom();
     }
   </script>
 
